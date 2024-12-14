@@ -80,7 +80,7 @@ odds
 ```
 
 ## 3) Visualisation of the results 
-###Forest model
+### Forest model
 ```{r}
 install.packages("forestmodel")
 library(forestmodel)
