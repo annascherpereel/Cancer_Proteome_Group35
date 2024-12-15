@@ -232,12 +232,11 @@ ggplot(grouped_data, aes(x = factor(Liver_cirrhosis), y = CYP1A2)) +
 
 
 # Machine learning model
-```{python}
-import pandas as pd
-```
+
 # 1) Data preparation
 ## Read in the metadata
 ```{python}
+import pandas as pd
 metadata = pd.read_csv("C:/MA2/metadata.csv")
 metadata.head()
 ```
@@ -247,20 +246,9 @@ metadata.head()
 print(metadata.dtypes)
 ```
 
-### Prepare numerical and categorical variables for logistic regression
-
-### Numerical variables
-```{python}
-numerical_variables =  ['age', 
-                        'Tumor_number', 
-                        'Diameter_of_tumor_(cm)', 
-                        'AFP_(ng/ml)',
-                        'Disease_free_survival_(m)', 
-                        'Total_follow_up_period_(m)', 
-                        'Tumor_cellularity_(%)']
-```
 ## Prepare numerical and categorical variables for logistic regression
-### Numerical variables with Diameter_of_tumor_(cm) -> calculation of the mean if there are 2 tumors present (for example "1.5+2.5") + check if the transformation of the data happened correctly
+### Numerical variables 
+### Diameter_of_tumor_(cm) -> calculation of the mean if there are 2 tumors present (for example "1.5+2.5") + check if the transformation of the data happened correctly
 ```{python}
 numerical_variables =  ['age', 
                         'Tumor_number', 
@@ -322,13 +310,13 @@ metadata_cleaned.head()
 print(metadata_cleaned.dtypes)
 ```
 
-
-### Count missing values (NA or empty strings) in each column
+## Count missing values (NA or empty strings) in each column
 ```{python}
 missing_values_count = metadata.isna().sum() + (metadata == '').sum()
 print("Missing values (NA or empty strings) count for each column:")
 print(missing_values_count)
 ```
+
 ## Check for feature normalisation (only for numerical features)
 ```{python}
 for col in numerical_variables_cleaned:
@@ -381,9 +369,7 @@ fig, ax = plt.subplots()
 tick_marks = np.arange(len(class_names))
 plt.xticks(tick_marks, class_names)
 plt.yticks(tick_marks, class_names)
-```
-### create heatmap
-```{python}
+
 sns.heatmap(pd.DataFrame(cnf_matrix), annot=True, cmap="YlGnBu" ,fmt='g')
 ax.xaxis.set_label_position("top")
 plt.tight_layout()
@@ -450,7 +436,7 @@ sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f")
 plt.title("Correlation Matrix of Features")
 plt.show()
 ```
-## Strong correlation between "Disease_free_survival_(m)" and "Total_follow_up_period_(m)" (0.74):
+### Strong correlation between "Disease_free_survival_(m)" and "Total_follow_up_period_(m)" (0.74):
 ### Significant correlation between "AFP_(ng/ml)" and "AFP(>200_ng/ml)_1" (0.49):
 ### Use Random Forest Classifier model to determine which of the redundant variables is more important for prediction. 
 ### Remove the less important one.
@@ -462,11 +448,6 @@ y2 = metadata_cleaned['Recurr_status']
 
 from sklearn.model_selection import train_test_split
 X_train2, X_test2, y_train2, y_test2 = train_test_split(X2, y2, test_size = 0.2, random_state = 1, stratify=y)
-
-from sklearn.preprocessing import StandardScaler
-scaler = StandardScaler()
-X_train2 = scaler.fit_transform(X_train2)
-X_test2 = scaler.transform(X_test2)
 
 from sklearn.linear_model import LogisticRegression
 logreg = LogisticRegression(random_state=1)
@@ -488,9 +469,7 @@ fig, ax = plt.subplots()
 tick_marks = np.arange(len(class_names))
 plt.xticks(tick_marks, class_names)
 plt.yticks(tick_marks, class_names)
-```
-### create heatmap
-```{python}
+
 sns.heatmap(pd.DataFrame(cnf_matrix), annot=True, cmap="YlGnBu" ,fmt='g')
 ax.xaxis.set_label_position("top")
 plt.tight_layout()
@@ -551,16 +530,12 @@ y3 = metadata_cleaned['Recurr_status']
 from sklearn.model_selection import train_test_split
 X_train3, X_test3, y_train3, y_test3 = train_test_split(X3, y3, test_size = 0.2, random_state = 1, stratify = y)
 
-from sklearn.preprocessing import StandardScaler
-scaler = StandardScaler()
-X_train3 = scaler.fit_transform(X_train3)
-X_test3 = scaler.transform(X_test3)
-
 from sklearn.linear_model import LogisticRegression
 logreg = LogisticRegression(random_state=1)
 logreg.fit(X_train3, y_train3)
 y_pred3 = logreg.predict(X_test3)
 ```
+
 ### Confusion Matrix with visualisation by using heatmap
 ```{python}
 from sklearn import metrics
@@ -576,9 +551,7 @@ fig, ax = plt.subplots()
 tick_marks = np.arange(len(class_names))
 plt.xticks(tick_marks, class_names)
 plt.yticks(tick_marks, class_names)
-```
-### create heatmap
-```{python}
+
 sns.heatmap(pd.DataFrame(cnf_matrix), annot=True, cmap="YlGnBu" ,fmt='g')
 ax.xaxis.set_label_position("top")
 plt.tight_layout()
@@ -606,6 +579,7 @@ plt.ylabel("True Positive Rate")
 plt.legend(loc="lower right")
 plt.show()
 ```
+
 ### Train Random Forest to check feature importance
 ```{python}
 rf_model = RandomForestClassifier(random_state=1)
