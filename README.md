@@ -233,18 +233,16 @@ ggplot(grouped_data, aes(x = factor(Liver_cirrhosis), y = CYP1A2)) +
 
 # Machine learning model
 ```{python}
-#!/usr/bin/env python
-#coding: utf-8
-
 import pandas as pd
 ```
-### Load the dataset
+# 1) Data preparation
+## Read in the metadata
 ```{python}
 metadata = pd.read_csv("C:/MA2/metadata.csv")
 metadata.head()
 ```
 
-### Preprocess the data
+## Check data types
 ```{python}
 print(metadata.dtypes)
 ```
@@ -261,29 +259,30 @@ numerical_variables =  ['age',
                         'Total_follow_up_period_(m)', 
                         'Tumor_cellularity_(%)']
 ```
-### Diameter_of_tumor_(cm) -> calculation of the mean if there are 2 tumors present (for example "1.5+2.5")
+## Prepare numerical and categorical variables for logistic regression
+### Numerical variables with Diameter_of_tumor_(cm) -> calculation of the mean if there are 2 tumors present (for example "1.5+2.5") + check if the transformation of the data happened correctly
 ```{python}
+numerical_variables =  ['age', 
+                        'Tumor_number', 
+                        'Diameter_of_tumor_(cm)', 
+                        'AFP_(ng/ml)',
+                        'Disease_free_survival_(m)', 
+                        'Total_follow_up_period_(m)', 
+                        'Tumor_cellularity_(%)']
+
 def process_tumor_diameter(value):
     if '+' in str(value):  # Check if the value contains a '+'
         numbers = [float(x) for x in value.split('+')]  # Split by '+' and convert to floats
         return sum(numbers) / len(numbers)  # Calculate the average
     else:
         return float(value)  # Return the value as a float if no '+'
-```
-### Apply the function to create a new processed column
-```{python}
+
 metadata['Diameter_of_tumor_(cm)_processed'] = metadata['Diameter_of_tumor_(cm)'].apply(process_tumor_diameter)
-```
-### Select the relevant columns to verify
-```{python}
+
 columns_to_display = ['ID', 'Tumor_number','Diameter_of_tumor_(cm)', 'Diameter_of_tumor_(cm)_processed']
-```
-### Display the resulting dataframe with the selected columns
-```{python}
+
 processed_metadata = metadata[columns_to_display]
-```
-### Display the dataframe as a table
-```{python}
+
 from IPython.display import display
 pd.set_option('display.max_rows', None)  # Show all rows
 pd.set_option('display.max_columns', None)  # Show all columns
@@ -296,7 +295,10 @@ numerical_variables_cleaned = ['age',
                                 'Disease_free_survival_(m)', 
                                 'Total_follow_up_period_(m)', 
                                 'Tumor_cellularity_(%)']
+
 ```
+
+
 ### Categorical variables -> one-hot encoding (converting to binary data)
 ```{python}
 categorical_variables = ['Gender', 
@@ -314,7 +316,9 @@ categorical_variables = ['Gender',
 
 metadata_cleaned = pd.get_dummies(metadata, columns=categorical_variables, drop_first=True)
 metadata_cleaned.head()
-
+```
+## Check the data types again
+``` {python}
 print(metadata_cleaned.dtypes)
 ```
 
@@ -322,57 +326,52 @@ print(metadata_cleaned.dtypes)
 ### Count missing values (NA or empty strings) in each column
 ```{python}
 missing_values_count = metadata.isna().sum() + (metadata == '').sum()
-```
-### Display the missing values count for each column
-```{python}
 print("Missing values (NA or empty strings) count for each column:")
 print(missing_values_count)
-
+```
+## Check for feature normalisation (only for numerical features)
+```{python}
 for col in numerical_variables_cleaned:
     sns.boxplot(x=metadata_cleaned[col])
     plt.title(f'Boxplot of {col}')
     plt.show()
 ```
 
-### Normaliaation of the numerical features with feature standardization
+## Normalisation of the numerical features with feature standardization
 ```{python}
 from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
 metadata_cleaned[numerical_variables_cleaned] = scaler.fit_transform(metadata_cleaned[numerical_variables_cleaned])
-
+```
+## Visualization of the standardization
+```{python}
 for col in numerical_variables_cleaned:
     sns.boxplot(x=metadata_cleaned[col])
     plt.title(f'Boxplot of {col}')
     plt.show()
 ```
 
-### Remove "Tumor_cellularity_(%)" since the missing values are only present in this column
-### Remove "Survival_status_1" because of the risk of the logical overlap 
-### Split data in features and target variable 
+# 2) Logistic regression model
+## Original logistic regression model with all the feature variables, except 'ID', 'Diameter_of_tumor_(cm)', 'Tumor_cellularity_(%)', 'Survival_status_1'
+
 ```{python}
 X = metadata_cleaned.drop(columns=['Recurr_status', 'ID', 'Diameter_of_tumor_(cm)', 'Tumor_cellularity_(%)', 'Survival_status_1'])
 y = metadata_cleaned['Recurr_status']
-```
-### Split X and y into training and testing sets
-```{python}
+
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 1, stratify=y)
-```
-### Logistic regression model
-```{python}
+
 from sklearn.linear_model import LogisticRegression
 logreg = LogisticRegression(random_state=1)
 logreg.fit(X_train, y_train)
 y_pred = logreg.predict(X_test)
 ```
-### Confusion Matrix
+### Confusion Matrix with visualisation by using heatmap
 ```{python}
 from sklearn import metrics
 cnf_matrix = metrics.confusion_matrix(y_test, y_pred)
 cnf_matrix
-```
-### Visualisation Confusion Matrix using a heatmap
-```{python}
+
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -418,28 +417,18 @@ plt.show()
 from sklearn.ensemble import RandomForestClassifier
 rf_model = RandomForestClassifier(random_state=1)
 rf_model.fit(X_train, y_train)
-```
-### Calculate feature importances
-```{python}
+
 importance = rf_model.feature_importances_
-```
-### Create a DataFrame to store features and their importances
-```{python}
+
 importance_df = pd.DataFrame({
     'Feature': X.columns,
     'Importance': importance * 100  # Convert to percentages
 })
-```
-### Sort features by importance
-```{python}
+
 importance_df = importance_df.sort_values(by='Importance', ascending=False)
-```
-### Display feature importances
-```{python}
+
 print(importance_df)
-```
-### Plot the feature importances
-```{python}
+
 plt.figure(figsize=(10, 6))
 sns.barplot(x='Importance', y='Feature', data=importance_df)
 plt.title("Feature importance with Random Forest Classifier model")
@@ -448,61 +437,48 @@ plt.ylabel("Feature")
 plt.show()
 ```
 
-### Control for collinearity between features
+## Control for collinearity between features
 ```{python}
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
-```
-### Correlation matrix
-```{python}
+
 correlation_matrix = X.corr()
-```
-### Plot heatmap
-```{python}
+
 plt.figure(figsize=(10, 8))
 sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f")
 plt.title("Correlation Matrix of Features")
 plt.show()
 ```
-### Remove redundant variables:
-### Strong correlation between "Disease_free_survival_(m)" and "Total_follow_up_period_(m)" (0.74):
+## Strong correlation between "Disease_free_survival_(m)" and "Total_follow_up_period_(m)" (0.74):
 ### Significant correlation between "AFP_(ng/ml)" and "AFP(>200_ng/ml)_1" (0.49):
 ### Use Random Forest Classifier model to determine which of the redundant variables is more important for prediction. 
 ### Remove the less important one.
-### Removing "Total_follow_up_period_(m)" and "AFP(>200_ng/ml)_1" as feature variables
-### Split data in features and target variable 
+
+## Logistic regression model: removal "Total_follow_up_period_(m)" and "AFP(>200_ng/ml)_1" as feature variables  
 ```{python}
 X2 = metadata_cleaned.drop(columns=['Recurr_status', 'ID', 'Diameter_of_tumor_(cm)', 'Tumor_cellularity_(%)', 'Survival_status_1', "Total_follow_up_period_(m)", "AFP(>200_ng/ml)_1"])
 y2 = metadata_cleaned['Recurr_status']
-```
-### Split X and y into training and testing sets
-```{python}
+
 from sklearn.model_selection import train_test_split
 X_train2, X_test2, y_train2, y_test2 = train_test_split(X2, y2, test_size = 0.2, random_state = 1, stratify=y)
-```
-### Standardize numerical features
-```{python}
+
 from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
 X_train2 = scaler.fit_transform(X_train2)
 X_test2 = scaler.transform(X_test2)
-```
-### Logistic regression model
-```{python}
+
 from sklearn.linear_model import LogisticRegression
 logreg = LogisticRegression(random_state=1)
 logreg.fit(X_train2, y_train2)
 y_pred2 = logreg.predict(X_test2)
 ```
-### Confusion Matrix
+### Confusion Matrix with visualisation by using heatmap
 ```{python}
 from sklearn import metrics
 cnf_matrix = metrics.confusion_matrix(y_test2, y_pred2)
 cnf_matrix
-```
-### Visualisation Confusion Matrix using a heatmap
-```{python}
+
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -547,28 +523,18 @@ plt.show()
 ```{python}
 rf_model = RandomForestClassifier(random_state=1)
 rf_model.fit(X_train2, y_train2)
-```
-### Calculate feature importances
-```{python}
+
 importance = rf_model.feature_importances_
-```
-### Create a DataFrame to store features and their importances
-```{python}
+
 importance_df = pd.DataFrame({
     'Feature': X2.columns,
     'Importance': importance * 100  # Convert to percentages
 })
-```
-### Sort features by importance
-```{python}
+
 importance_df = importance_df.sort_values(by='Importance', ascending=False)
-```
-### Display feature importances
-```{python}
+
 print(importance_df)
-```
-### Plot the feature importances
-```{python}
+
 plt.figure(figsize=(10, 6))
 sns.barplot(x='Importance', y='Feature', data=importance_df)
 plt.title("Feature importance with Random Forest Classifier model")
@@ -577,38 +543,30 @@ plt.ylabel("Feature")
 plt.show()
 ```
 
-### Logistic regression model but with the top three features that contribute the most to the model's performance (Disease_free_survival_(m), age and AFP_(ng/ml))
+## Logistic regression model but with the top three features that contribute the most to the model's performance (Disease_free_survival_(m), age and AFP_(ng/ml))
 ```{python}
 X3 = metadata_cleaned[['Disease_free_survival_(m)', 'age', 'AFP_(ng/ml)']]
 y3 = metadata_cleaned['Recurr_status']
-```
-### Split X and y into training and testing sets
-```{python}
+
 from sklearn.model_selection import train_test_split
 X_train3, X_test3, y_train3, y_test3 = train_test_split(X3, y3, test_size = 0.2, random_state = 1, stratify = y)
-```
-### Standardize numerical features
-```{python}
+
 from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
 X_train3 = scaler.fit_transform(X_train3)
 X_test3 = scaler.transform(X_test3)
-```
-### Logistic regression model
-```{python}
+
 from sklearn.linear_model import LogisticRegression
 logreg = LogisticRegression(random_state=1)
 logreg.fit(X_train3, y_train3)
 y_pred3 = logreg.predict(X_test3)
 ```
-### Confusion Matrix
+### Confusion Matrix with visualisation by using heatmap
 ```{python}
 from sklearn import metrics
 cnf_matrix = metrics.confusion_matrix(y_test3, y_pred3)
 cnf_matrix
-```
-### Visualisation Confusion Matrix using a heatmap
-```{python}
+
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -652,28 +610,18 @@ plt.show()
 ```{python}
 rf_model = RandomForestClassifier(random_state=1)
 rf_model.fit(X_train3, y_train3)
-```
-### Calculate feature importances
-```{python}
+
 importance = rf_model.feature_importances_
-```
-### Create a DataFrame to store features and their importances
-```{python}
+
 importance_df = pd.DataFrame({
     'Feature': X3.columns,
     'Importance': importance * 100  # Convert to percentages
 })
-```
-### Sort features by importance
-```{python}
+
 importance_df = importance_df.sort_values(by='Importance', ascending=False)
-```
-### Display feature importances
-```{python}
+
 print(importance_df)
-```
-### Plot the feature importances
-```{python}
+
 plt.figure(figsize=(10, 6))
 sns.barplot(x='Importance', y='Feature', data=importance_df)
 plt.title("Feature importance with Random Forest Classifier model")
