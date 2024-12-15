@@ -1,26 +1,15 @@
-
-# In[96]:
+Machine Learning Model
 
 # 1) Data preparation
-
 ## Read in the metadata
 import pandas as pd
 metadata = pd.read_csv("C:/MA2/metadata.csv")
 metadata.head()
 
-
-# In[97]:
-
-
 ## Check data types
 print(metadata.dtypes)
 
-
-# In[110]:
-
-
 ## Prepare numerical and categorical variables for logistic regression
-
 ### Numerical variables with Diameter_of_tumor_(cm) -> calculation of the mean if there are 2 tumors present (for example "1.5+2.5") + check if the transformation of the data happened correctly
 numerical_variables =  ['age', 
                         'Tumor_number', 
@@ -73,23 +62,13 @@ categorical_variables = ['Gender',
 metadata_cleaned = pd.get_dummies(metadata, columns=categorical_variables, drop_first=True)
 metadata_cleaned.head()
 
-
-# In[111]:
-
 ## Check the data types again
 print(metadata_cleaned.dtypes)
-
-
-# In[112]:
-
 
 ## Count missing values (NA or empty strings) in each column
 missing_values_count = metadata.isna().sum() + (metadata == '').sum()
 print("Missing values (NA or empty strings) count for each column:")
 print(missing_values_count)
-
-
-# In[113]:
 
 ## Check for feature normalisation (only for numerical features)
 for col in numerical_variables_cleaned:
@@ -97,17 +76,10 @@ for col in numerical_variables_cleaned:
     plt.title(f'Boxplot of {col}')
     plt.show()
 
-
-# In[114]:
-
-
 ## Normalisation of the numerical features with feature standardization
 from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
 metadata_cleaned[numerical_variables_cleaned] = scaler.fit_transform(metadata_cleaned[numerical_variables_cleaned])
-
-
-# In[115]:
 
 ## Visualization of the standardization
 for col in numerical_variables_cleaned:
@@ -115,8 +87,6 @@ for col in numerical_variables_cleaned:
     plt.title(f'Boxplot of {col}')
     plt.show()
 
-
-# In[116]:
 
 # 2) Logistic regression model
 ## Original logistic regression model with all the feature variables, except 'ID', 'Diameter_of_tumor_(cm)', 'Tumor_cellularity_(%)', 'Survival_status_1'
@@ -154,18 +124,10 @@ plt.title('Confusion matrix', y=1.1)
 plt.ylabel('Actual label')
 plt.xlabel('Predicted label')
 
-
-# In[117]:
-
-
 ### Classification model evaluation metrics
 from sklearn.metrics import classification_report 
 target_names = ['No recurrence', 'Recurrence'] 
 print(classification_report(y_test, y_pred, target_names=target_names))
-
-
-# In[118]:
-
 
 ### Receiver Operating Characteristic (ROC) curve
 y_pred_proba = logreg.predict_proba(X_test)[::,1]
@@ -177,10 +139,6 @@ plt.xlabel("False Positive Rate")
 plt.ylabel("True Positive Rate")
 plt.legend(loc="lower right")
 plt.show()
-
-
-# In[128]:
-
 
 ### Train Random Forest to check feature importance
 from sklearn.ensemble import RandomForestClassifier
@@ -205,10 +163,6 @@ plt.xlabel("Importance (%)")
 plt.ylabel("Feature")
 plt.show()
 
-
-# In[120]:
-
-
 ## Control for collinearity between features
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -227,10 +181,9 @@ plt.show()
 ### Remove the less important one.
 
 
-# In[121]:
+
 
 ## Logistic regression model: removal "Total_follow_up_period_(m)" and "AFP(>200_ng/ml)_1" as feature variables  
-
 X2 = metadata_cleaned.drop(columns=['Recurr_status', 'ID', 'Diameter_of_tumor_(cm)', 'Tumor_cellularity_(%)', 'Survival_status_1', "Total_follow_up_period_(m)", "AFP(>200_ng/ml)_1"])
 y2 = metadata_cleaned['Recurr_status']
 
@@ -264,18 +217,10 @@ plt.title('Confusion matrix', y=1.1)
 plt.ylabel('Actual label')
 plt.xlabel('Predicted label')
 
-
-# In[122]:
-
-
 ### Classification model evaluation metrics
 from sklearn.metrics import classification_report
 target_names = ['No recurrence', 'Recurrence']
 print(classification_report(y_test2, y_pred2, target_names=target_names))
-
-
-# In[123]:
-
 
 ### Receiver Operating Characteristic (ROC) curve
 y_pred_proba2 = logreg.predict_proba(X_test2)[::,1]
@@ -287,10 +232,6 @@ plt.xlabel("False Positive Rate")
 plt.ylabel("True Positive Rate")
 plt.legend(loc="lower right")
 plt.show()
-
-
-# In[133]:
-
 
 ### Train Random Forest to check feature importance
 rf_model = RandomForestClassifier(random_state=1)
@@ -315,11 +256,9 @@ plt.ylabel("Feature")
 plt.show()
 
 
-# In[129]:
 
 
 ## Logistic regression model but with the top three features that contribute the most to the model's performance (Disease_free_survival_(m), age and AFP_(ng/ml))
-
 X3 = metadata_cleaned[['Disease_free_survival_(m)', 'age', 'AFP_(ng/ml)']]
 y3 = metadata_cleaned['Recurr_status']
 
@@ -353,18 +292,10 @@ plt.title('Confusion matrix', y=1.1)
 plt.ylabel('Actual label')
 plt.xlabel('Predicted label')
 
-
-# In[130]:
-
-
 ### Classification model evaluation metrics
 from sklearn.metrics import classification_report
 target_names = ['No recurrence', 'Recurrence']
 print(classification_report(y_test3, y_pred3, target_names=target_names))
-
-
-# In[131]:
-
 
 ### Receiver Operating Characteristic (ROC) curve
 y_pred_proba3 = logreg.predict_proba(X_test3)[::,1]
@@ -376,10 +307,6 @@ plt.xlabel("False Positive Rate")
 plt.ylabel("True Positive Rate")
 plt.legend(loc="lower right")
 plt.show()
-
-
-# In[134]:
-
 
 ### Train Random Forest to check feature importance
 rf_model = RandomForestClassifier(random_state=1)
@@ -402,10 +329,3 @@ plt.title("Feature importance with Random Forest Classifier model")
 plt.xlabel("Importance (%)")
 plt.ylabel("Feature")
 plt.show()
-
-
-# In[ ]:
-
-
-
-
